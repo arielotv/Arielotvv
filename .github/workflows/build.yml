@@ -24,7 +24,7 @@ jobs:
       - name: Extraer proyecto
         run: |
           mkdir proyecto
-          unzip -q Arielotv-proyecto.zip -d proyecto
+          unzip -q ArieloTV-proyecto.zip -d proyecto
 
       - name: Compilar APK
         run: |
