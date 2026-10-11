@@ -1,0 +1,46 @@
+
+name: Compilar ArieloTV
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Extraer proyecto
+        run: |
+          mkdir proyecto
+          unzip -q Arielotv-proyecto.zip -d proyecto
+
+      - name: Compilar APK
+        run: |
+          WRAPPER=$(find proyecto -type f -name gradlew -print -quit)
+          if [ -z "$WRAPPER" ]; then
+            echo "No se encontró gradlew dentro del ZIP"
+            exit 1
+          fi
+          ROOT=$(dirname "$WRAPPER")
+          chmod +x "$WRAPPER"
+          cd "$ROOT"
+          ./gradlew assembleDebug
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArieloTV-APK
+          path: proyecto/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
