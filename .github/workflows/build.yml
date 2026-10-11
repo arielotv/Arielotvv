@@ -1,46 +1,41 @@
-
+Escritura
 name: Compilar ArieloTV
+on: workflow_dispatch: push: paths: - ".github/workflows/build.yml"
+jobs: build: runs-on: ubuntu-latest
+steps:
+  - name: Descargar repositorio
+    uses: actions/checkout@v4
 
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/build.yml"
+  - name: Preparar Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+  - name: Preparar Gradle
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: "8.7"
 
-    steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
+  - name: Extraer proyecto
+    run: |
+      mkdir proyecto
+      unzip -q "./ArieloTV-proyecto.zip" -d proyecto
 
-      - name: Preparar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+  - name: Compilar APK
+    run: |
+      ROOT=$(find proyecto -type f -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs dirname)
+      if [ -z "$ROOT" ] || [ ! -d "$ROOT" ]; then
+        echo "No se encontró la carpeta principal del proyecto"
+        find proyecto -maxdepth 4 -type f
+        exit 1
+      fi
+      cd "$ROOT"
+      gradle assembleDebug
 
-      - name: Extraer proyecto
-        run: |
-          mkdir proyecto
-          unzip -q "./ArieloTV-proyecto.zip" -d proyecto
-
-      - name: Compilar APK
-        run: |
-          WRAPPER=$(find proyecto -type f -name gradlew -print -quit)
-          if [ -z "$WRAPPER" ]; then
-            echo "No se encontró gradlew dentro del ZIP"
-            exit 1
-          fi
-          ROOT=$(dirname "$WRAPPER")
-          chmod +x "$WRAPPER"
-          cd "$ROOT"
-          ./gradlew assembleDebug
-
-      - name: Guardar APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ArieloTV-APK
-          path: proyecto/**/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+  - name: Guardar APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: ArieloTV-APK
+      path: proyecto/**/build/outputs/apk/debug/*.apk
+      if-no-files-found: error
